@@ -40,31 +40,56 @@ Variants like **Random Restart Hill Climbing** or **Simulated Annealing** can ov
 ## Algorithms
 
 ### A* Search Algorithm
-1. Insert start node into an open priority queue ordered by `f = g + h`.  
-2. Repeat until the queue is empty:  
-   - Remove node with lowest `f(n)`.  
-   - If it is the goal → success.  
-   - Else, generate successors.  
-   - Compute `g, h, f` for successors.  
-   - Insert if not visited.  
-3. If queue is empty → failure.  
+- Place the initial state into a priority queue (OPEN list), ordered by f(n) = g(n) + h(n).
+- Set g(start) = 0 and compute h(start), then f(start) = g(start) + h(start).
+- Create a CLOSED set to store expanded (visited) states.
+- Store parent pointers to reconstruct the path later.
+
+- While OPEN is not empty:
+  - Remove the state with the lowest f(n) value from OPEN (best candidate).
+  - If this state is the goal:
+    - Return success and reconstruct the solution path by following parent links.
+  - Otherwise, expand the current state by generating all valid successors 
+    (e.g., possible moves of the blank in case of the 8-puzzle).
+  - For each successor:
+    - Compute g(successor) = g(current) + step_cost(current, successor).
+    - Compute h(successor) using the heuristic function.
+    - Compute f(successor) = g(successor) + h(successor).
+    - If the successor is not in CLOSED or OPEN:
+      - Insert it into OPEN with its f, g, h values and record its parent.
+    - Else if the successor is already in OPEN but this new path has a lower g value:
+      - Update its g, f values and reset its parent to the current state.
+  - Add the current state to CLOSED (mark as expanded).
+
+- If OPEN becomes empty and the goal is not found:
+  - Return failure (no solution exists)
+ 
 
 ---
 
 ### Beam Search Algorithm
-1. Start with the initial node in the open list.  
-2. While open list is not empty:  
-   - Expand best node.  
-   - Generate successors.  
-   - Keep only best `k` nodes (beam width).  
-   - If goal found → success.  
-3. If list empty → failure.  
+- Place the start node in the OPEN list.
+- Define the beam width k (maximum number of nodes to keep at each level).
+
+- While the OPEN list is not empty:
+  - Select and expand the best node(s) from the OPEN list.
+  - Generate all possible successors of the expanded nodes.
+  - Evaluate each successor using the heuristic function.
+  - Sort the successors according to their heuristic values.
+  - Keep only the best k successors (beam width restriction) and discard the rest.
+  - Replace the OPEN list with these k nodes.
+
+- If the goal state is present in the OPEN list:
+  - Return success and reconstruct the path to the goal.
+
+- If the OPEN list becomes empty and the goal is not found:
+  - Return failure (no solution).
 
 ---
 
 ### Hill Climbing Algorithm
-1. Start with an initial state.  
-2. Repeat until goal or no better state:  
+- Start with an initial state.  
+- Repeat until goal or no better state:  
    - Generate neighbors.  
    - Choose neighbor with best heuristic.  
    - If better → move. Else stop.  

@@ -47,33 +47,95 @@ It is solved using **state space search**, where:
 ## Algorithm  
 
 ### Best First Search for 8-Puzzle  
-1. Start with the initial state and insert it into a priority queue ordered by heuristic value.  
-2. Repeat until the queue is empty:  
-   i. Remove the node with the lowest heuristic value.  
-   ii. If it is the goal state, return success.  
-   iii. Otherwise, generate all valid child states.  
-   iv. Insert the child states into the priority queue if not already visited.  
+- Create a priority queue (OPEN list), ordered by heuristic value (h).
+- Insert the initial state into the queue.
+- Create a set (CLOSED list) to store visited states.
+- While the priority queue is not empty, repeat:
+   Remove (pop) the state with the lowest heuristic value (best state)
+    If this state is the goal state → return SUCCESS (solution found).
+   Mark the current state as visited 
+      - Add it to the CLOSED list.
+   Expand the current state:
+      - Generate all possible valid child states (next moves)
+   For each child state:
+      If the child is not in CLOSED (not already visited):
+         - Calculate its heuristic value h(child).
+         - Insert the child into the priority queue (OPEN list).
+         - Optionally, keep track of parent pointers to reconstruct the path.
+If the queue becomes empty and no goal was found:
+   - Return FAILURE (no solution exists).
+  
 
 ---
 
 ### Tic-Tac-Toe  
-1. Initialize an empty 3×3 board.  
-2. While the game is not over:  
-   i. If it is the computer’s turn, use the algorithm (rule-based/minimax) to choose the optimal move.  
-   ii. If it is the player’s turn, accept input and update the board.  
-   iii. Check if either player has won or if the board is full.  
-3. Declare the result as win, lose, or draw.  
+Turn 1:
+- Play at corner (1).
+Turn 2:
+- If center (5) is empty → play at 5.
+- Else → play at corner (1).
+Turn 3:
+- If corner (9) is empty → play at 9.
+- Else → play at corner (3).
+Turn 4:
+- If X can win → play winning move.
+- Else if O can win → block winning move.
+- Else if corner (7) is empty → play at 7.
+- Else → play at corner (3).
+Turn 5:
+- If X can win → play winning move.
+- Else if O can win → block winning move.
+- Else → play a strategic position (Make2).
+Turn 6:
+- If O can win → block winning move.
+- Else if X can win → play winning move.
+- Else → play a strategic position (Make2).
+Turn 7:
+- If X can win → play winning move.
+- Else if O can win → block winning move.
+- Else → play any empty spot.
+Turn 8:
+- If O can win → block winning move.
+- Else if X can win → play winning move.
+- Else → play any empty spot.
+Turn 9:
+- If X can win → play winning move.
+- Else if O can win → block winning move.
+- Else → play any empty spot.
+
 
 ---
 
 ### Water Jug Problem  
-1. Represent the state as **(x, y)** where:  
-   - x = amount in jug1  
-   - y = amount in jug2  
-2. Start from the initial state (0,0).  
-3. Generate successor states using valid operations: fill, empty, or pour.  
-4. Use BFS or DFS to explore states until the target state is found.  
-5. Return the sequence of operations leading to the solution.  
+- Represent each state as (x, y):
+     where x = current amount of water in Jug1
+      y = current amount of water in Jug2.
+- Start with the initial state (0, 0).
+- Create a queue (for BFS) or stack (for DFS) to store states.
+- Keep a set (Visited) to record states already explored.
+- Store parent information to reconstruct the solution path.
+- The target state is reached when either jug contains the required amount.
+
+ From a state (x, y), possible next states are:
+   a. Fill Jug1 → (jug1_capacity, y)
+   b. Fill Jug2 → (x, jug2_capacity)
+   c. Empty Jug1 → (0, y)
+   d. Empty Jug2 → (x, 0)
+   e. Pour Jug1 → Jug2:
+        - Transfer min(x, jug2_capacity - y)
+   f. Pour Jug2 → Jug1:
+        - Transfer min(y, jug1_capacity - x)
+Search Procedure (using BFS):
+   a. Insert initial state (0, 0) into queue.
+   b. While queue is not empty:
+      i. Remove the front state (x, y).
+      ii. If (x, y) is the goal → stop and reconstruct solution.
+      iii. Otherwise, generate all valid successor states.
+      iv. For each successor:
+          - If not in Visited, mark as visited and insert into queue.
+
+   - If goal found → return the sequence of operations (solution path).
+   - If queue is empty → return failure (no solution exists).
 
 ---
 
