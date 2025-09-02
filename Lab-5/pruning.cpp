@@ -1,155 +1,157 @@
-#include <iostream>
-#include <vector>
-#include <limits>
+#include<iostream>
+#include<vector>
+#include<limits>
 using namespace std;
 
-vector<int> board(10, 2);
-int turn = 1;
-bool aiIsX;
+enum Players {
+    None,
+    Computer,
+    Human
+};
 
-void printBoard() {
-    cout << "\n";
-    for (int i = 1; i <= 9; ++i) {
-        char mark = (board[i] == 3) ? 'X' : (board[i] == 5) ? 'O' : ' ';
-        cout << " " << mark << " ";
-        if (i % 3 == 0) cout << "\n";
-        else cout << "|";
-        if(i % 3 == 0 && i != 9) cout<<"-----------\n";
+struct State {
+    vector<vector<Players>> state;
+};
+
+int checkGoal(const State& s) {
+    const vector<vector<Players>> Board = s.state;
+    for (int i = 0; i < 3; i++) {
+        if (Board[i][0] == Board[i][1] && Board[i][1]== Board[i][2]) {
+            if (Board[i][0] == None) return 0;
+            return Board[i][0] == Computer?1:-1;
+        }
+        if (Board[0][i] ==Board[1][i] && Board[2][i] == Board[1][i]) {
+            if (Board[0][i] == None) return 0;
+            return Board[0][i] == Computer?1:-1;
+        }
     }
-    cout << "\n";
+    if (Board[0][0] == Board[1][1] && Board[2][2] == Board[1][1]) {
+        if (Board[0][0] == None) return 0;
+        return Board[0][0] == Computer?1:-1;
+    }
+    if (Board[0][2] == Board[1][1] && Board[2][0] == Board[1][1]) {
+        if (Board[0][2] == None) return 0;
+        return Board[0][2]== Computer?1:-1;
+    }
+    return 0;
 }
 
-bool isBoardFull() {
-    for (int i = 1; i <= 9; i++) {
-        if (board[i] == 2) return false;
+bool isFull(const vector<vector<Players>> &Board) {
+    for (auto &row : Board) {
+        for (const int cell : row) {
+            if (cell == None) return false;
+        }
     }
     return true;
 }
 
-int checkWinner() {
-    vector<vector<int>> lines = {
-        {1, 2, 3}, {4, 5, 6}, {7, 8, 9}, 
-        {1, 4, 7}, {2, 5, 8}, {3, 6, 9}, 
-        {1, 5, 9}, {3, 5, 7}             
-    };
-
-    for (auto &line : lines) {
-        int prod = board[line[0]] * board[line[1]] * board[line[2]];
-        if (prod == 27) return 3;   // X wins (3*3*3)
-        if (prod == 125) return 5;  // O wins (5*5*5)
+void printBoard(const vector<vector<Players>> &Board) {
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            const char c = Board[i][j] == Computer ? 'X' : Board[i][j] == Human ? 'O' : '.';
+            cout << c << " ";
+        }
+        cout << endl;
     }
-    return 0; 
+    cout << endl;
 }
 
+// Alpha-Beta version
+int minimax(State &s, Players player, int alpha, int beta) {
+    const int winner = checkGoal(s);
+    if (winner != 0) return winner;
+    if (isFull(s.state)) return 0;
 
-int minimax(bool isMaximizing, int depth, int aiSymbol, int humanSymbol,
-            int alpha, int beta) {
-    int winner = checkWinner();
-    if (winner == aiSymbol) return 10 - depth;       
-    if (winner == humanSymbol) return depth - 10;   
-    if (isBoardFull()) return 0;                    
-
-    if (isMaximizing) {
-        int best = numeric_limits<int>::min();
-        for (int i = 1; i <= 9; i++) {
-            if (board[i] == 2) {
-                board[i] = aiSymbol;
-                int score = minimax(false, depth + 1, aiSymbol, humanSymbol, alpha, beta);
-                board[i] = 2;
-                best = max(best, score);
-                alpha = max(alpha, best);
-                if (beta <= alpha) break;
+    if (player == Computer) { // Maximizing
+        int bestScore = numeric_limits<int>::min();
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (s.state[i][j] == None) {
+                    s.state[i][j] = Computer;
+                    int score = minimax(s, Human, alpha, beta);
+                    s.state[i][j] = None;
+                    bestScore = max(bestScore, score);
+                    alpha = max(alpha, bestScore);
+                    if (beta <= alpha) return bestScore; // prune
+                }
             }
         }
-        return best;
-    } else {
-        int best = numeric_limits<int>::max();
-        for (int i = 1; i <= 9; i++) {
-            if (board[i] == 2) {
-                board[i] = humanSymbol;
-                int score = minimax(true, depth + 1, aiSymbol, humanSymbol, alpha, beta);
-                board[i] = 2;
-                best = min(best, score);
-                beta = min(beta, best);
-                if (beta <= alpha) break; 
+        return bestScore;
+    } else { // Minimizing
+        int bestScore = numeric_limits<int>::max();
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (s.state[i][j] == None) {
+                    s.state[i][j] = Human;
+                    int score = minimax(s, Computer, alpha, beta);
+                    s.state[i][j] = None;
+                    bestScore = min(bestScore, score);
+                    beta = min(beta, bestScore);
+                    if (beta <= alpha) return bestScore; // prune
+                }
             }
         }
-        return best;
+        return bestScore;
     }
 }
 
-
-void aiMove() {
-    int aiSymbol = aiIsX ? 3 : 5;
-    int humanSymbol = aiIsX ? 5 : 3;
-
+pair<int,int> bestMove(State &s) {
     int bestScore = numeric_limits<int>::min();
-    int bestMove = 0;
-
-    for (int i = 1; i <= 9; i++) {
-        if (board[i] == 2) {
-            board[i] = aiSymbol;
-            int score = minimax(false, 0, aiSymbol, humanSymbol,
-                                numeric_limits<int>::min(), numeric_limits<int>::max());
-            board[i] = 2;
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = i;
+    pair<int,int> move = {-1,-1};
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (s.state[i][j] == None) {
+                s.state[i][j] = Computer;
+                const int score = minimax(s, Human, numeric_limits<int>::min(), numeric_limits<int>::max());
+                s.state[i][j] = None;
+                if (score > bestScore) {
+                    bestScore = score;
+                    move = {i,j};
+                }
             }
         }
     }
-
-    cout << "AI chooses square " << bestMove << "\n";
-    board[bestMove] = aiSymbol;
-    turn++;
+    return move;
 }
-
-void humanMove() {
-    int move;
-    while (true) {
-        cout << "Your move (1-9): ";
-        cin >> move;
-
-        if (move >= 1 && move <= 9 && board[move] == 2) {
-            board[move] = (turn % 2 == 1) ? 3 : 5;
-            turn++;
-            break;
-        } else {
-            cout << "Invalid move. Try again.\n";
-        }
-    }
-}
-
 
 int main() {
-    cout << "Welcome to Tic-Tac-Toe (AI with Minimax + Alpha-Beta)!\n";
-    char choice;
-    cout << "Should AI play as X and go first? (y/n): ";
-    cin >> choice;
+    State start;
+    start.state = vector<vector<Players>>(3, vector<Players>(3, None));
+    Players player = Computer;
 
-    aiIsX = (choice == 'y' || choice == 'Y');
-    printBoard();
+    while (true) {
+        printBoard(start.state);
 
-    while (turn <= 9) {
-        if ((turn % 2 == 1) == aiIsX) {
-            aiMove();
+        if (checkGoal(start) == 1) {
+            cout << "Computer wins!" << endl;
+            break;
+        }
+        if (checkGoal(start) == -1) {
+            cout << "You win!" << endl;
+            break;
+        }
+        if (isFull(start.state)) {
+            cout << "It's a draw!" << endl;
+            break;
+        }
+
+        if (player == Human) {
+            int r, c;
+            cout << "Enter row and col (0-2): ";
+            cin >> r >> c;
+            if (r < 0 || r >= 3 || c < 0 || c >= 3 || start.state[r][c] != None) {
+                cout << "Invalid move! Try again." << endl;
+                continue;
+            }
+            start.state[r][c] = Human;
+            player = Computer;
         } else {
-            humanMove();
-        }
-
-        printBoard();
-
-        int winner = checkWinner();
-        if (winner == 3) {
-            cout << ((aiIsX) ? "AI wins!\n" : "Human wins!\n");
-            return 0;
-        }
-        if (winner == 5) {
-            cout << ((!aiIsX) ? "AI wins!\n" : "Human wins!\n");
-            return 0;
+            cout << "Computer is thinking..." << endl;
+            const pair<int,int> mov = bestMove(start);
+            const int r = mov.first;
+            const int c = mov.second;
+            start.state[r][c] = Computer;
+            player = Human;
         }
     }
-
-    cout << "It's a draw!\n";
-    return 0;
 }
